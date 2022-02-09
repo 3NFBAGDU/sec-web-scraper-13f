@@ -23,7 +23,6 @@ def get_user_input():
     cik = input("Enter 10-digit CIK number: ")
     return cik
 
-
 def scrap_company_report(requested_cik):
     # Find mutual fund by CIK number on EDGAR
     response = get_request(create_url(requested_cik))
@@ -35,7 +34,6 @@ def scrap_company_report(requested_cik):
     scrap_report_by_url(last_report, "last_report")
     scrap_report_by_url(previous_report, "previous_report")
 
-
 def scrap_report_by_url(url, filename):
     response_two = get_request(url)
     soup_two = BeautifulSoup(response_two.text, "html.parser")
@@ -45,7 +43,6 @@ def scrap_report_by_url(url, filename):
     response_xml = get_request(sec_url + xml_url)
     soup_xml = BeautifulSoup(response_xml.content, "lxml")
     xml_to_csv(soup_xml, filename)
-
 
 def xml_to_csv(soup_xml, name):
 
