@@ -4,6 +4,7 @@ import requests
 import re
 from bs4 import BeautifulSoup
 from openpyxl import Workbook
+from openpyxl.styles import Font
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 sec_url = 'https://www.sec.gov'
@@ -12,6 +13,31 @@ MERGE_CONFIG = {
     'Stocks By Quarters': 'A1:K1',
     'Bought Stocks': 'A1:H1',
     'Sold Stocks': 'A1:H1',
+}
+
+def difference_color_function(ws, len):
+    def change_cell_color(cell_id):
+        red = '00FF0000'
+        green = '0000FF00'
+        try:    
+            if ws[cell_id].value < 0:
+                ws[cell_id] = round(-ws[cell_id].value * 100, 2)
+                ws[cell_id].font = Font(color = "00FF0000") 
+                return            
+            ws[cell_id] = round(ws[cell_id].value * 100, 2)
+            ws[cell_id].font = Font(color = "0000FF00")             
+        except Exception as e:
+            print(e)
+    
+    dif_cell = ['G', 'J']
+    for i in range(4, 4+len+1):
+        for cell_name in dif_cell:
+            change_cell_color(f"{cell_name}{i}")
+
+COLOR_CONFIG = {
+    'Stocks By Quarters': difference_color_function,
+    'Bought Stocks': lambda x, y: x,
+    'Sold Stocks': lambda x, y: x,
 }
 
 def get_request(url):
@@ -64,14 +90,14 @@ def fetch_xml_data(soup_xml):
     investmentdiscretions = soup_xml.body.findAll(re.compile('investmentdiscretion'))
     df = pd.DataFrame(columns= columns)
     for issuer, cusip, value, sshprnamt, investmentdiscretion, in zip(issuers, cusips, values, sshprnamts, investmentdiscretions):
-        row = {
-            "Name of Issuer": issuer.text,
-            "CUSIP": cusip.text,
-            "Value": int(value.text),
-            "Shares": int(sshprnamt.text),
-            "Investment Discretion": investmentdiscretion.text,
-        }
-        df = df.append(row, ignore_index=True)
+        row_df = pd.DataFrame({
+            "Name of Issuer": [issuer.text],
+            "CUSIP": [cusip.text],
+            "Value": [int(value.text)],
+            "Shares": [int(sshprnamt.text)],
+            "Investment Discretion": [investmentdiscretion.text],
+        })
+        df = pd.concat([df, row_df], ignore_index = True, axis = 0)
 
     df["Percentage Of holdings"] = df.Value / df.Value.sum() 
     return df
@@ -105,8 +131,9 @@ def join_stocks(last_quarter, previous_quarter):
         this method will join stocks from df1, which does not occur in df2
     '''
     column_ordering = [
-        'Name of Issuer', 'CUSIP', 'Shares Q1', 'Shares Q2', 'Shares Difference',
-        'Value Q1', 'Value Q2', 'Investment Discretion',
+        'Name of Issuer', 'CUSIP', 'Investment Discretion', 
+        'Shares Q1', 'Shares Q2', 'Shares Difference %',
+        'Value Q1', 'Value Q2', "Value Difference %",
         'Percentage Of holdings Q2', 'Percentage Of holdings Q1',
     ]
 
@@ -115,7 +142,8 @@ def join_stocks(last_quarter, previous_quarter):
     last_quarter.rename(index=str, columns=dict([(col, col+' Q1') for col in last_quarter if col not in not_rename_columns]), inplace=True)
     previous_quarter.rename(index=str, columns=dict([(col, col+' Q2') for col in previous_quarter if col not in not_rename_columns]), inplace=True)
     join_df = pd.merge(last_quarter, previous_quarter, how='inner', on=['Name of Issuer', 'CUSIP', 'Investment Discretion'])
-    join_df["Shares Difference"] = (join_df["Shares Q1"] - join_df["Shares Q2"]) / join_df["Shares Q2"].sum()
+    join_df["Shares Difference %"] = (join_df["Shares Q1"] - join_df["Shares Q2"]) / join_df["Shares Q2"]
+    join_df["Value Difference %"] = (join_df["Value Q1"] - join_df["Value Q2"]) / join_df["Value Q2"]
 
     join_df = join_df.reindex(columns= column_ordering)
     return join_df
@@ -146,6 +174,8 @@ def df_to_excel(df, ws, name):
 
     for cell in ws['A'] + ws[1]:
         cell.style = 'Pandas'
+
+    COLOR_CONFIG[name](ws, df.shape[0])
 
 requested_cik = get_user_input()
 last, previous =  scrap_company_report(requested_cik)
