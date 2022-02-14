@@ -10,7 +10,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 sec_url = 'https://www.sec.gov'
 
 MERGE_CONFIG = {
-    'Stocks By Quarters': 'A1:K1',
+    'Stocks By Quarters': 'A1:L1',
     'Bought Stocks': 'A1:H1',
     'Sold Stocks': 'A1:H1',
 }
