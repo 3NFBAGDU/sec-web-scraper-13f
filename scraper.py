@@ -22,10 +22,10 @@ def difference_color_function(ws, len):
         try:    
             if ws[cell_id].value < 0:
                 ws[cell_id] = round(-ws[cell_id].value * 100, 2)
-                ws[cell_id].font = Font(color = "00FF0000") 
+                ws[cell_id].font = Font(color = red) 
                 return            
             ws[cell_id] = round(ws[cell_id].value * 100, 2)
-            ws[cell_id].font = Font(color = "0000FF00")             
+            ws[cell_id].font = Font(color = green)             
         except Exception as e:
             print(e)
     
