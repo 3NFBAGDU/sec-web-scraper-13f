@@ -10,9 +10,9 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 sec_url = 'https://www.sec.gov'
 
 MERGE_CONFIG = {
-    'Stocks By Quarters': 'A1:L1',
-    'Bought Stocks': 'A1:H1',
-    'Sold Stocks': 'A1:H1',
+    'Stocks By Quarters': 'A1:K1',
+    'Bought Stocks': 'A1:G1',
+    'Sold Stocks': 'A1:G1',
 }
 
 def difference_color_function(ws, len):
@@ -31,8 +31,8 @@ def difference_color_function(ws, len):
         except Exception as e:
             print(e)
     
-    dif_cell = ['G', 'J']
-    for i in range(4, 4+len+1):
+    dif_cell = ['F', 'I']
+    for i in range(3, 4+len+1):
         for cell_name in dif_cell:
             change_cell_color(f"{cell_name}{i}")
 
@@ -171,11 +171,8 @@ def make_excel(last, previous):
 def df_to_excel(df, ws, name):
     ws.merge_cells(MERGE_CONFIG[name])
     ws['A1'] = name
-    for r in dataframe_to_rows(df, index=True, header=True):
+    for r in dataframe_to_rows(df, index=False, header=True):
         ws.append(r)
-
-    for cell in ws['A'] + ws[1]:
-        cell.style = 'Pandas'
 
     COLOR_CONFIG[name](ws, df.shape[0])
 
